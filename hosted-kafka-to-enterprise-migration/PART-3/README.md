@@ -23,29 +23,33 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
 
 3. Use the KCP CLI to scan your AWS region for Kafka resources and generate a report. Make sure that for `<YOUR_AWS_REGION>`, you use the region where all of your workshop resources are deployed, for example, `us-west-2`: 
    ```bash
-   kcp scan region --region <YOUR_AWS_REGION>
+   kcp discover --region <YOUR_AWS_REGION>
    ```
 
-   This command generates two files `(region_scan_<YOUR_AWS_REGION>.md` and `region_scan_<YOUR_AWS_REGION>.json`) that contain information about your MSK resources in your chosen AWS region. You should see the a cluster called `msk-migration-cluster` in the output. Copy its `Cluster ARN` value for use in the next step. 
+   This command generates two files (`kcp-state.json` and `cluster-credentials.yaml`) that contain information about your MSK resources in your chosen AWS region. You should see the a cluster called `msk-migration-cluster` in the output. Copy its `Cluster ARN` value for use in the next step. 
 
-4. Use the KCP CLI to perform a cluster-level scan on your source cluster. To do this, you'll need the `Cluster ARN` from the previous step, as well as the MSK cluster SASL username and password from the Terraform output in the [Workshop Introduction](../README.md): 
+4. Add your cluster credentials to the `cluster-credentials.yaml` file. 
    ```bash
-   kcp scan cluster \
-   --cluster-arn <YOUR_CLUSTER_ARN> \
-   --use-sasl-scram \
-   --sasl-scram-username <SASL_USERNAME> \
-   --sasl-scram-password <SASL_PASSWORD>
+   nano cluster-credentials.yaml
+   # OR
+   vim cluster-credentials.yaml
    ```
 
-   This command generates two files (`cluster_scan_<cluster-name>.md` and `cluster_scan_<cluster-name>.json`) that contain cluster-level details about your chosen MSK cluster, including topic info. **Make sure you see the `orders` topic listed in the topic output from this command.**
+   Enter the MSK cluster SASL username and password from the Terraform output into the appropriate fields in the `cluster-credentials.yaml` file and save it. 
+
+5. Use the KCP CLI to perform a cluster-level scan on your source cluster. To do this, you'll need the `Cluster ARN` from the previous step, as well as the MSK cluster SASL username and password from the Terraform output in the [Workshop Introduction](../README.md): 
+   ```bash
+   kcp scan clusters \
+   --state-file kcp-state.json \
+   --credentials-file cluster-credentials.yaml
+   ```
 
 ### Create the migration infrastructure 
 1. Run the following command to create the migration infrastructure Terraform. Make sure to substitute in your own values for `<YOUR_AWS_REGION>` and `<YOUR_VPC_ID>`: 
    ```bash 
    kcp create-asset migration-infra \
-   --region <YOUR_AWS_REGION> \
-   --cluster-file ./kcp-scan/<YOUR-AWS-REGION>/msk-migration-cluster/msk-migration-cluster.json \
-   --vpc-id <YOUR_VPC_ID> \
+   --state-file kcp-state.json \
+   --cluster-arn <YOUR_CLUSTER_ARN> \
    --type 2 \
    --cc-env-name target-environment \
    --cc-cluster-name target-cluster \
@@ -90,7 +94,8 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
 1. Run the following command to create the migration scripts: 
    ```bash
    kcp create-asset migration-scripts \
-   --cluster-file ./kcp-scan/us-west-2/msk-migration-cluster/msk-migration-cluster.json \
+   --state-file kcp-state.json \
+   --cluster-arn <YOUR_CLUSTER_ARN> \
    --migration-infra-folder migration_infra
    ```
 
