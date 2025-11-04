@@ -4,6 +4,8 @@ In this section, you will perform the actual cutover of client applications from
 
 Mirror topics in Cluster Links can't be written to. To convert a mirror topic to a writable topic, you need to **promote** the topic, which detaches it from the Cluster Link. In this section, you will verify that there's no lag on your mirror topic, and then will promote it to be writable for use with your client applications. Then, you'll be able to perform the cutover with your client apps. 
 
+![image](../assets/migration-arch-part-4.png)
+
 ### Requirements
 
 Complete [Part 3: Provisioning Migration Resources with KCP CLI](../PART-3/README.md) before starting Part 4. 
