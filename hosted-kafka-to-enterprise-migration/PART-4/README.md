@@ -14,7 +14,7 @@ Complete [Part 3: Provisioning Migration Resources with KCP CLI](../PART-3/READM
 
 Before connecting to the Confluent Cloud resources, you need to deploy the reverse proxy and configure DNS entries to enable secure access to your private Confluent Cloud cluster.
 
-**Note, the reverse proxy setup is optional, but gives you better visibility into your migrated data in the Confluent Cloud console.** If you'd like to skip it, move to **Configure Environment Files** below. 
+**Note, the reverse proxy setup is optional, but gives you better visibility into your migrated data in the Confluent Cloud console from your local system.** If you'd like to skip it, move to **Configure Environment Files** below. 
 
 #### Deploy the Reverse Proxy
 
@@ -40,7 +40,7 @@ terraform apply
 
 #### Configure Local DNS
 
-1. The reverse proxy generates a `dns_entries.txt` file containing DNS entries that you must manually add to your instance `/etc/hosts` file:
+1. The reverse proxy generates a `dns_entries.txt` file containing DNS entries that you must manually add to your local machine's `/etc/hosts` file:
 
 ```bash
 cat dns_entries.txt
@@ -49,7 +49,7 @@ cat dns_entries.txt
 2. Copy the full output, then open the `/etc/hosts` file and append the `dns_entries.txt` contents. 
 
 ```bash
-nano /etc/hosts
+sudo nano /etc/hosts
 ```
 
 ### Review the Topic in Confluent Cloud

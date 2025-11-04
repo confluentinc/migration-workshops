@@ -21,7 +21,7 @@ To perform this workshop yourself, you will need the following:
 
 * An active AWS Account with read and write permissions for Amazon MSK, Amazon EC2, and AWS VPC resources. 
 * An active Confluent Cloud account and API key with cloud management permissions. 
-* **Command Line tools**: Run ```brew install awscli make terraform``` or, for Windows:
+* **Command Line tools**: Run ```brew install awscli git terraform``` or, for Windows:
 
     ```cmd
     winget install --id Amazon.AWSCLI -e && `

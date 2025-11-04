@@ -23,7 +23,7 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
     export AWS_SESSION_TOKEN="<YOUR_AWS_SESSION_TOKEN>"
     ```
 
-3. Use the KCP CLI to scan your AWS region for Kafka resources and generate a report. Make sure that for `<YOUR_AWS_REGION>`, you use the region where all of your workshop resources are deployed, for example, `us-west-2`: 
+3. Use the KCP CLI to scan your AWS region for Kafka resources and generate a report. If you changed the default region, you use the region where all of your workshop resources are deployed, for example, `us-west-2`: 
    ```bash
    kcp discover --region us-west-2
    ```
@@ -35,7 +35,7 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
    nano cluster-credentials.yaml
    ```
 
-   Enter the MSK cluster SASL username and password from the Terraform output into the appropriate fields in the `cluster-credentials.yaml` file and save it. 
+   Enter the MSK cluster SASL username ("msk-user") and password ("ChangeMe123!") into the appropriate fields in the `cluster-credentials.yaml` file and save it. 
 
 5. Use the KCP CLI to perform a cluster-level scan on your source cluster: 
    ```bash
@@ -65,11 +65,15 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
    terraform apply --auto-approve
    ```
 
-4. When prompted, enter your Confluent Cloud API Key details (f you don't have a Confluent Cloud API Key, see the [Workshop Introduction](../README.md) prerequisites) and SASL username and password for the MSK cluster. Terraform will begin deploying the necessary resources. 
+4. When prompted, enter your Confluent Cloud API Key details (f you don't have a Confluent Cloud API Key, see the [Workshop Introduction](../README.md) prerequisites) and SASL username ("msk-user") and password ("ChangeMe123!") for the MSK cluster. Terraform will begin deploying the necessary resources. 
+
+Once you've done this, you can navigate to the [Confluent Cloud Console](http://confluent.cloud/go/cluster) and view your newly-created target resources. 
+
+![image](../assets/cluster.png)
 
 5. After the terraform deployment completes successfully, you need to add the newly-created **cluster API key** to your `env.cc` file. First, get the API key and secret from the terraform output:
    ```bash
-   terraform output
+   terraform output confluent_cloud_cluster_bootstrap_endpoint
    terraform output confluent_cloud_cluster_api_key
    terraform output confluent_cloud_cluster_api_key_secret
    ```
@@ -92,6 +96,7 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
 ### Create and run the migration scripts
 1. Run the following command to create the migration scripts: 
    ```bash
+   cd ~/
    kcp create-asset migrate-topics \
    --state-file kcp-state.json \
    --cluster-arn <YOUR_CLUSTER_ARN> \
@@ -102,10 +107,20 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
    ```bash 
    cd migrate_topics
    ./msk-to-cp-mirror-topics.sh
+   ```
+
+   Wait for this to finish, then run: 
+   ```bash 
    ./cp-to-cc-mirror-topics.sh
    ```
 
    These scripts establish your Cluster Links and begin mirroring your topics for you. As a reminder, since the source MSK cluster is private, you need to first mirror your topics to the Confluent Platform jump cluster using the `msk-to-cp-mirror-topics` script, and then mirror from your jump cluster to the target Confluent Cloud Enterprise Cluster using the `cp-to-cc-mirror-topics` script. 
+
+   You can now navigate to the **Topics** menu inside your cluster in Confluent Cloud and view your orders topic. 
+
+   ![image](../assets/topic.png)
+
+   You may notice that topic information is currently limited for this privately-networked Enterprise Cluster. If you want to view more topic-specific details, you can create the reverse proxy in the next section for a more granular view. 
 
 
 #### Next Steps 
