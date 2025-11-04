@@ -13,7 +13,7 @@ This repository steps through an example migration from hosted Kafka services to
 
 In this workshop, we will use Terraform to deploy the source MSK cluster infrastructure and the Confluent KCP CLI to deploy all migration infrastructure.
 
-![image](/assets/migration-architecture.png)
+![image](./assets/migration-architecture.png)
 
 ## Prerequisites 
 
