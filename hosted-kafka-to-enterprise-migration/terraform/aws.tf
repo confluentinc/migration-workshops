@@ -321,3 +321,160 @@ resource "aws_msk_scram_secret_association" "msk_scram_secret" {
 
   depends_on = [aws_secretsmanager_secret_version.msk_scram_secret]
 }
+
+# Bastion Host Resources
+# Data source to get EC2 Instance Connect CIDR block
+data "http" "aws_ip_ranges" {
+  count = var.create_bastion_host ? 1 : 0
+  url   = "https://ip-ranges.amazonaws.com/ip-ranges.json"
+}
+
+locals {
+  aws_ip_ranges = var.create_bastion_host ? jsondecode(data.http.aws_ip_ranges[0].response_body) : null
+  ec2_instance_connect_cidr = var.create_bastion_host ? [
+    for prefix in local.aws_ip_ranges.prefixes : prefix.ip_prefix
+    if prefix.service == "EC2_INSTANCE_CONNECT" && prefix.region == var.aws_region
+  ][0] : null
+}
+
+# Public Subnet for Bastion Host
+resource "aws_subnet" "bastion_public_subnet" {
+  count                   = var.create_bastion_host ? 1 : 0
+  vpc_id                  = aws_vpc.msk_vpc.id
+  cidr_block              = var.bastion_public_subnet_cidr
+  availability_zone       = "${var.aws_region}${var.availability_zones[0]}"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "${var.environment}-bastion-public-subnet"
+    Type = "Public"
+  }
+}
+
+# Route Table for Bastion Host Public Subnet
+resource "aws_route_table" "bastion_public_rt" {
+  count  = var.create_bastion_host ? 1 : 0
+  vpc_id = aws_vpc.msk_vpc.id
+
+  tags = {
+    Name = "${var.environment}-bastion-public-rt"
+  }
+}
+
+# Route for Internet Gateway
+resource "aws_route" "bastion_public_route" {
+  count                  = var.create_bastion_host && var.create_internet_gateway ? 1 : 0
+  route_table_id         = aws_route_table.bastion_public_rt[0].id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.msk_igw[0].id
+}
+
+# Route Table Association for Bastion Public Subnet
+resource "aws_route_table_association" "bastion_public_rta" {
+  count          = var.create_bastion_host ? 1 : 0
+  subnet_id      = aws_subnet.bastion_public_subnet[0].id
+  route_table_id = aws_route_table.bastion_public_rt[0].id
+}
+
+# Security Group for Bastion Host
+resource "aws_security_group" "bastion_host_sg" {
+  count       = var.create_bastion_host ? 1 : 0
+  name        = "${var.environment}-bastion-host-sg"
+  description = "Security group for bastion host with EC2 Instance Connect access"
+  vpc_id      = aws_vpc.msk_vpc.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [local.ec2_instance_connect_cidr != null ? local.ec2_instance_connect_cidr : "0.0.0.0/0"]
+    description = "SSH access via EC2 Instance Connect"
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.environment}-bastion-host-sg"
+  }
+}
+
+# EC2 Key Pair for Bastion Host
+resource "aws_key_pair" "bastion_host_key" {
+  count      = var.create_bastion_host && var.existing_bastion_key_pair_name == "" ? 1 : 0
+  key_name   = "${var.environment}-migration-ssh-key"
+  public_key = tls_private_key.bastion_host_key[0].public_key_openssh
+
+  tags = {
+    Name = "${var.environment}-migration-ssh-key"
+  }
+}
+
+# TLS Private Key for Bastion Host
+resource "tls_private_key" "bastion_host_key" {
+  count     = var.create_bastion_host && var.existing_bastion_key_pair_name == "" ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Store private key in AWS Systems Manager Parameter Store
+resource "aws_ssm_parameter" "bastion_host_private_key" {
+  count       = var.create_bastion_host && var.existing_bastion_key_pair_name == "" ? 1 : 0
+  name        = "/ec2/keypair/${aws_key_pair.bastion_host_key[0].key_name}"
+  description = "Private key for bastion host"
+  type        = "SecureString"
+  value       = tls_private_key.bastion_host_key[0].private_key_pem
+
+  tags = {
+    Name = "${var.environment}-bastion-host-private-key"
+  }
+}
+
+# Data source to get latest Amazon Linux 2023 AMI
+data "aws_ssm_parameter" "amazon_linux_2023_ami" {
+  count = var.create_bastion_host ? 1 : 0
+  name  = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64"
+}
+
+# Bastion Host EC2 Instance
+resource "aws_instance" "bastion_host" {
+  count         = var.create_bastion_host ? 1 : 0
+  ami           = data.aws_ssm_parameter.amazon_linux_2023_ami[0].value
+  instance_type = var.bastion_instance_type
+  subnet_id     = aws_subnet.bastion_public_subnet[0].id
+  key_name      = var.existing_bastion_key_pair_name != "" ? var.existing_bastion_key_pair_name : aws_key_pair.bastion_host_key[0].key_name
+
+  vpc_security_group_ids = [aws_security_group.bastion_host_sg[0].id]
+
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    sudo yum install -y yum-utils
+    sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+    sudo yum -y install terraform
+    sudo yum install java-17-amazon-corretto-headless -y
+
+    sudo su - ec2-user
+    cd /home/ec2-user
+    curl -O https://packages.confluent.io/archive/8.0/confluent-8.0.0.tar.gz
+    tar xzf confluent-8.0.0.tar.gz
+
+    echo "export PATH=/home/ec2-user/confluent-8.0.0/bin:$PATH" >> /home/ec2-user/.bashrc
+
+    curl -L -o kcp https://github.com/confluentinc/kcp/releases/download/v0.4.3/kcp_linux_amd64
+    chmod +x kcp
+    sudo mv kcp /usr/local/bin/
+
+    # Clone migration workshops repository and copy clients folder
+    git clone https://github.com/confluentinc/migration-workshops.git
+    cp -r migration-workshops/hosted-kafka-to-enterprise-migration/clients ~/clients
+  EOF
+  )
+
+  tags = {
+    Name = "${var.environment}-migration-bastion-host"
+  }
+}

@@ -19,19 +19,6 @@ In this final section, we will safely shut down all workshop resources and clean
    terraform destroy
    ```
 
-3. Exit your bastion host. 
-
-   ```bash
-   exit
-   ```
-
-4. Navigate to the `bastion_host` folder on you local machine and destroy the Terraform resources:
-
-   ```bash
-   cd path/to/hosted-kafka-to-enterprise-migration/bastion_host
-   terraform destroy
-   ```
-
 ### Cleanup MSK Infrastructure
 1. Navigate to the `terraform` directory and destroy the Terraform resources:
    ```bash
