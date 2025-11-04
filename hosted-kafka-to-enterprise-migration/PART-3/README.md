@@ -96,7 +96,7 @@ Once you've done this, you can navigate to the [Confluent Cloud Console](http://
 ### Create and run the migration scripts
 1. Run the following command to create the migration scripts: 
    ```bash
-   cd ../
+   cd ~/
    kcp create-asset migrate-topics \
    --state-file kcp-state.json \
    --cluster-arn <YOUR_CLUSTER_ARN> \

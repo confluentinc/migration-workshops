@@ -20,6 +20,7 @@ Before connecting to the Confluent Cloud resources, you need to deploy the rever
 
 1. Using the KCP CLI, create the `reverse_proxy` terraform resources:
 ```bash
+cd ~/
 kcp create-asset reverse-proxy \
 --region us-west-2 \
 --vpc-id <YOUR_VPC_ID> \
