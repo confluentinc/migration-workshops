@@ -25,7 +25,7 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
 
 3. Use the KCP CLI to scan your AWS region for Kafka resources and generate a report. Make sure that for `<YOUR_AWS_REGION>`, you use the region where all of your workshop resources are deployed, for example, `us-west-2`: 
    ```bash
-   kcp discover --region <YOUR_AWS_REGION>
+   kcp discover --region us-west-2
    ```
 
    This command generates two files (`kcp-state.json` and `cluster-credentials.yaml`) that contain information about your MSK resources in your chosen AWS region. You should see the a cluster called `msk-migration-cluster` in the output. Copy its `Cluster ARN` value for use in the next step. 
@@ -33,13 +33,11 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
 4. Add your cluster credentials to the `cluster-credentials.yaml` file. 
    ```bash
    nano cluster-credentials.yaml
-   # OR
-   vim cluster-credentials.yaml
    ```
 
    Enter the MSK cluster SASL username and password from the Terraform output into the appropriate fields in the `cluster-credentials.yaml` file and save it. 
 
-5. Use the KCP CLI to perform a cluster-level scan on your source cluster. To do this, you'll need the `Cluster ARN` from the previous step, as well as the MSK cluster SASL username and password from the Terraform output in the [Workshop Introduction](../README.md): 
+5. Use the KCP CLI to perform a cluster-level scan on your source cluster: 
    ```bash
    kcp scan clusters \
    --state-file kcp-state.json \
@@ -47,7 +45,7 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
    ```
 
 ### Create the migration infrastructure 
-1. Run the following command to create the migration infrastructure Terraform. Make sure to substitute in your own values for `<YOUR_AWS_REGION>` and `<YOUR_VPC_ID>`: 
+1. Run the following command to create the migration infrastructure Terraform. Make sure to substitute in your own values for `<YOUR_VPC_ID>`: 
    ```bash 
    kcp create-asset migration-infra \
    --state-file kcp-state.json \
@@ -57,7 +55,7 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
    --cc-cluster-name target-cluster \
    --cc-cluster-type enterprise \
    --ansible-control-node-subnet-cidr 10.0.80.0/24 \
-   --jump-cluster-broker-subnet-config <YOUR_AWS_REGION>a:10.0.10.0/24,<YOUR_AWS_REGION>b:10.0.20.0/24,<YOUR_AWS_REGION>c:10.0.30.0/24
+   --jump-cluster-broker-subnet-config us-west-2a:10.0.10.0/24,us-west-2b:10.0.20.0/24,us-west-2c:10.0.30.0/24
    ```
 
 2. Navigate to the newly-created `migration_infra` directory and create the infrastructure with terraform: 
@@ -71,6 +69,7 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
 
 5. After the terraform deployment completes successfully, you need to add the newly-created **cluster API key** to your `env.cc` file. First, get the API key and secret from the terraform output:
    ```bash
+   terraform output
    terraform output confluent_cloud_cluster_api_key
    terraform output confluent_cloud_cluster_api_key_secret
    ```
@@ -79,8 +78,6 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
    ```bash
    cd ~/clients
    nano env.cc
-   # OR
-   vim env.cc
    ```
 
 7. Replace the placeholder values in your `env.cc` file with the actual cluster API credentials from the terraform output:
@@ -95,15 +92,15 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
 ### Create and run the migration scripts
 1. Run the following command to create the migration scripts: 
    ```bash
-   kcp create-asset migration-scripts \
+   kcp create-asset migrate-topics \
    --state-file kcp-state.json \
    --cluster-arn <YOUR_CLUSTER_ARN> \
    --migration-infra-folder migration_infra
    ```
 
-2. Navigate to the new `migration_scripts` folder and run the scripts:
+2. Navigate to the new `migrate_topics` folder and run the scripts:
    ```bash 
-   cd migration_scripts
+   cd migrate_topics
    ./msk-to-cp-mirror-topics.sh
    ./cp-to-cc-mirror-topics.sh
    ```
