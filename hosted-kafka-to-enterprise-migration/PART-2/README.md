@@ -14,20 +14,18 @@ Complete [Part 1: Access the Bastion Host](../PART-1/README.md) before starting 
    ```bash
    mkdir clients
    cp -r migration-workshops/hosted-kafka-to-enterprise-migration/clients ~/
+   cd ~/clients
    ```
 
 2. Update the `env.msk` file with your MSK cluster configuration:
    ```bash
-   cd ~/clients
-   # Edit the env.msk file with your actual MSK cluster details
    nano env.msk
-   # OR 
-   vim env.msk
    ```
+
 3. Ensure the following variables are set correctly. Note, you may need to retrieve these values from the setup Terraform output from the [Workshop Introduction](../README.md):
    - `MSK_BOOTSTRAP_SERVERS`: Your MSK cluster bootstrap servers
-   - `MSK_SASL_USERNAME`: Your MSK SASL username
-   - `MSK_SASL_PASSWORD`: Your MSK SASL password
+   - `MSK_SASL_USERNAME`: msk-user
+   - `MSK_SASL_PASSWORD`: ChangeMe123!
 4. Source the environment file:
    ```bash
    source env.msk
@@ -49,15 +47,13 @@ Complete [Part 1: Access the Bastion Host](../PART-1/README.md) before starting 
 2. Verify that messages are being sent successfully to the MSK cluster.
 
 ### Test the Consumer Application
-1. In a separate terminal session, SSH into the EC2 instance following the steps above. Then, execute the orders consumer application:
+1. In a separate tab, connect to the EC2 instance following the steps above. Then, execute the orders consumer application:
    ```bash
+   cd ~/clients
+   source env.msk 
    python3 orders_consumer.py
    ```
 2. Verify that messages are being consumed correctly from the MSK cluster.
-
-### Stop the producer and consumer 
-1. In both terminals, `Ctrl+C` to stop the producer and consumer applications. 
-
 
 #### Next Steps
 

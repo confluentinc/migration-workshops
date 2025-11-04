@@ -10,22 +10,24 @@ Mirror topics in Cluster Links can't be written to. To convert a mirror topic to
 
 Complete [Part 3: Provisioning Migration Resources with KCP CLI](../PART-3/README.md) before starting Part 4. 
 
-### Deploy Reverse Proxy and Configure DNS
+### Optional - Deploy Reverse Proxy and Configure DNS
 
 Before connecting to the Confluent Cloud resources, you need to deploy the reverse proxy and configure DNS entries to enable secure access to your private Confluent Cloud cluster.
 
-#### Step 1: Deploy the Reverse Proxy
+**Note, the reverse proxy setup is optional, but gives you better visibility into your migrated data in the Confluent Cloud console.** If you'd like to skip it, move to **Configure Environment Files** below. 
 
-Using the KCP CLI, create the `reverse_proxy` terraform resources:
+#### Deploy the Reverse Proxy
+
+1. Using the KCP CLI, create the `reverse_proxy` terraform resources:
 ```bash
 kcp create-asset reverse-proxy \
---region <YOUR_AWS_REGION> \
+--region us-west-2 \
 --vpc-id <YOUR_VPC_ID> \
 --migration-infra-folder migration_infra \
 --reverse-proxy-cidr 10.0.45.0/24
 ```
 
-Navigate to the generated `reverse_proxy` directory and deploy the infrastructure:
+2. Navigate to the generated `reverse_proxy` directory and deploy the infrastructure:
 
 ```bash
 cd reverse_proxy
@@ -34,29 +36,37 @@ terraform plan
 terraform apply
 ```
 
-When prompted, type `yes` to confirm the deployment.
+3. When prompted, type `yes` to confirm the deployment.
 
-#### Step 2: Configure Local DNS
+#### Configure Local DNS
 
-The reverse proxy generates a `dns_entries.txt` file containing DNS entries that you must manually add to your local machine's `/etc/hosts` file:
+1. The reverse proxy generates a `dns_entries.txt` file containing DNS entries that you must manually add to your instance `/etc/hosts` file:
 
 ```bash
 cat dns_entries.txt
 ```
 
-Copy the full output, then open the `/etc/hosts` file and append the `dns_entries.txt` contents. 
+2. Copy the full output, then open the `/etc/hosts` file and append the `dns_entries.txt` contents. 
 
 ```bash
 nano /etc/hosts
-# OR 
-vim /etc/hosts
 ```
+
+### Review the Topic in Confluent Cloud
+
+1. Navigate to the [Environments page](https://confluent.cloud/environments?tab=cloud) in the Confluent Cloud console. 
+
+2. Select your `target-environment`.
+
+3. Select **Clusters**, then select your `target-cluster`. 
+
+4. Navigate to the **Topics** page within the cluster. Here, you can view operational details about your topic. 
 
 ### Configure Environment Files
 #### Promote the Target Topic
 Before running the consumer and producer on the new cluster, you need to promote the mirror topic to make it writable:
 
-1. Login to Confluent Cloud CLI:
+1. Login to Confluent Cloud CLI **on the bastion host**:
    ```bash
    confluent login --no-browser
    ```
