@@ -61,20 +61,15 @@ Before running the consumer and producer on the new cluster, you need to promote
 
 2. Set the target environment:
    ```bash
+   confluent environment list
    confluent environment use <target environment>
    ```
 
 3. Set the target cluster:
    ```bash
+   confluent kafka cluster list
    confluent kafka cluster use <target cluster>
    ```
-
-4. Promote the mirror topic to make it writable:
-   ```bash
-   confluent kafka mirror promote orders --link cp-to-cc-link
-   ```
-
-   This command will check the replication lag, synchronize everything, and make the topic writable only if it's fully caught up.
 
 ### Make the Target Cluster Writable
 

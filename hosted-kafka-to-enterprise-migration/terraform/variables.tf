@@ -89,3 +89,28 @@ variable "msk_password" {
   type        = string
   sensitive   = true
 }
+
+# Bastion Host Variables
+variable "create_bastion_host" {
+  description = "Whether to create a bastion host for MSK access"
+  type        = bool
+  default     = true
+}
+
+variable "bastion_instance_type" {
+  description = "Instance type for the bastion host"
+  type        = string
+  default     = "t2.medium"
+}
+
+variable "bastion_public_subnet_cidr" {
+  description = "CIDR block for the bastion host public subnet"
+  type        = string
+  default     = "10.0.100.0/24"
+}
+
+variable "existing_bastion_key_pair_name" {
+  description = "Existing EC2 key pair name to use for bastion host (if provided, new key pair will not be created)"
+  type        = string
+  default     = ""
+}

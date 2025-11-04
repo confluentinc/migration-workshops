@@ -4,18 +4,19 @@ By now, you've set up the bastion host server required to manage the private MSK
 
 ### General Requirements
 
-Complete [Part 1: Set Up the Bastion Host with KCP CLI](../PART-1/README.md) before starting Part 2. 
+Complete [Part 1: Access the Bastion Host](../PART-1/README.md) before starting Part 2. 
 
 ### Explore and Test the Client Applications
 
-#### Connect to the Bastion Host
-1. If you aren't already connected to your bastion host, use the following command to connect via SSH: 
-      ```bash
-      ssh -i .ssh/migration_rsa ec2-user@<YOUR_BASTION_HOST_PUBLIC_IP>
-      ```
-
 #### Configure Environment Variables
-1. Update the `env.msk` file with your MSK cluster configuration:
+1. Move the workshop client resources to your root folder. This will make the workshop easier to navigate in future steps. 
+
+   ```bash
+   mkdir clients
+   cp -r migration-workshops/hosted-kafka-to-enterprise-migration/clients ~/
+   ```
+
+2. Update the `env.msk` file with your MSK cluster configuration:
    ```bash
    cd ~/clients
    # Edit the env.msk file with your actual MSK cluster details
@@ -23,11 +24,11 @@ Complete [Part 1: Set Up the Bastion Host with KCP CLI](../PART-1/README.md) bef
    # OR 
    vim env.msk
    ```
-2. Ensure the following variables are set correctly. Note, you may need to retrieve these values from the setup Terraform output from the [Workshop Introduction](../README.md):
+3. Ensure the following variables are set correctly. Note, you may need to retrieve these values from the setup Terraform output from the [Workshop Introduction](../README.md):
    - `MSK_BOOTSTRAP_SERVERS`: Your MSK cluster bootstrap servers
    - `MSK_SASL_USERNAME`: Your MSK SASL username
    - `MSK_SASL_PASSWORD`: Your MSK SASL password
-3. Source the environment file:
+4. Source the environment file:
    ```bash
    source env.msk
    ```

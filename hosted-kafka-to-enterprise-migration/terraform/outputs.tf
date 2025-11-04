@@ -118,3 +118,55 @@ output "connection_commands" {
     get_scram_secret = "aws secretsmanager get-secret-value --secret-id ${aws_secretsmanager_secret.msk_scram_secret.arn}"
   }
 }
+
+# Bastion Host Outputs
+output "bastion_host_instance_id" {
+  description = "Instance ID of the bastion host"
+  value       = var.create_bastion_host ? aws_instance.bastion_host[0].id : null
+}
+
+output "bastion_host_public_ip" {
+  description = "Public IP address of the bastion host"
+  value       = var.create_bastion_host ? aws_instance.bastion_host[0].public_ip : null
+}
+
+output "bastion_host_private_ip" {
+  description = "Private IP address of the bastion host"
+  value       = var.create_bastion_host ? aws_instance.bastion_host[0].private_ip : null
+}
+
+output "bastion_host_security_group_id" {
+  description = "Security group ID of the bastion host"
+  value       = var.create_bastion_host ? aws_security_group.bastion_host_sg[0].id : null
+}
+
+output "bastion_host_key_pair_name" {
+  description = "Key pair name for the bastion host"
+  value = var.create_bastion_host ? (
+    var.existing_bastion_key_pair_name != "" ? var.existing_bastion_key_pair_name : aws_key_pair.bastion_host_key[0].key_name
+  ) : null
+}
+
+output "bastion_host_public_subnet_id" {
+  description = "Public subnet ID where the bastion host is deployed"
+  value       = var.create_bastion_host ? aws_subnet.bastion_public_subnet[0].id : null
+}
+
+output "bastion_host_private_key_parameter" {
+  description = "Parameter Store parameter name containing the private key (only if key pair was created)"
+  value = var.create_bastion_host && var.existing_bastion_key_pair_name == "" ? (
+    "/ec2/keypair/${aws_key_pair.bastion_host_key[0].key_name}"
+  ) : null
+}
+
+output "bastion_host_connection_info" {
+  description = "Connection information for the bastion host"
+  value = var.create_bastion_host ? {
+    instance_id            = aws_instance.bastion_host[0].id
+    public_ip             = aws_instance.bastion_host[0].public_ip
+    private_ip            = aws_instance.bastion_host[0].private_ip
+    key_pair              = var.existing_bastion_key_pair_name != "" ? var.existing_bastion_key_pair_name : aws_key_pair.bastion_host_key[0].key_name
+    private_key_parameter = var.existing_bastion_key_pair_name == "" ? "/ec2/keypair/${aws_key_pair.bastion_host_key[0].key_name}" : null
+    availability_zone     = "${var.aws_region}${var.availability_zones[0]}"
+  } : null
+}
