@@ -1,6 +1,6 @@
 ## Part 2 - Set Up and Test Client Applications
 
-By now, you've set up the bastion host server required to manage the private MSK cluster migration to Confluent Cloud. In this section, we will set up and test the MSK client producer and consumer applications to ensure they're working correctly with the source MSK cluster before migration.
+By now, you've accessed the bastion host server required to manage the private MSK cluster migration to Confluent Cloud. In this section, we will set up and test the MSK client producer and consumer applications to ensure they're working correctly with the source MSK cluster before migration.
 
 ### General Requirements
 

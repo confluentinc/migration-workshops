@@ -4,6 +4,8 @@ In this section, you will use the Confluent KCP CLI to provision all necessary m
 
 Creating all of this infrastructure manually can be complex and time consuming. Luckily, the KCP CLI automates creation of all of the infrastructure and networking components required.
 
+![image](../assets/migration-arch-part-3.png)
+
 ### Requirements
 
 Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) before starting Part 3. 

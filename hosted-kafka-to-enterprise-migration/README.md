@@ -13,6 +13,8 @@ This repository steps through an example migration from hosted Kafka services to
 
 In this workshop, we will use Terraform to deploy the source MSK cluster infrastructure and the Confluent KCP CLI to deploy all migration infrastructure.
 
+![image](/assets/migration-architecture.png)
+
 ## Prerequisites 
 
 To perform this workshop yourself, you will need the following: 
@@ -28,30 +30,8 @@ To perform this workshop yourself, you will need the following:
 
   * **Terraform (v1.9.5+)** - The demo resources are automatically created using [Terraform](https://www.terraform.io). In addition to having Terraform installed locally, you will need to provide your cloud provider credentials so Terraform can create and manage the resources for you.
   * **AWS CLI** - Terraform uses the AWS CLI to manage AWS resources
-  * **Go (v1.24+)** - Install using this [link](https://go.dev/doc/install)
-  * **Make** - Required to utilize the KCP CLI 
 
 ## Setup
-
-### Create Confluent Cloud Account and API Key
-
-1. Head over to the [Confluent Cloud signup page](https://confluent.cloud/signup) and sign up for a new account.
-
-2. Watch your inbox for a confirmation email. Once you get the email, follow the link to proceed.
-
-3. At this point, you will be asked to create a cluster. **You can skip this step, as we will set up all required resources in the workshop.** 
-
-4. Go to the [API keys page](https://confluent.cloud/settings/api-keys). You can also navigate to the API keys page by expanding the sidebar menu in the Confluent Cloud Console and selecting API keys.
-
-5. Click **Add API key**.
-
-6. Select **My account** for the API key. Then, select **Next**
-
-7. Select **Cloud resource management** as the resource scope for the API key. Then, select **Next**.
-
-8. Give the API Key a name, then select **Next**. 
-
-7. Click **Create API key**. Then, **make sure you download the API key on this page. If you forget, you'll need to create a new key to download the values.**
 
 ### Provision source resources
 
@@ -61,7 +41,7 @@ First, we need to create a sample hosted Kafka environment - in this case, an Am
 2. Change directory to demo repository and terraform directory.
 
     ```bash
-    cd hosted-kafka-to-enterprise-migration/terraform
+    cd migration-workshops/hosted-kafka-to-enterprise-migration/terraform
     ```
 3. Set the environment variables for your AWS role. Make sure to enter your own values for `<YOUR_AWS_ACCESS_KEY_ID>`, `<YOUR_AWS_SECRET_ACCESS_KEY>`, and `<YOUR_AWS_SESSION_TOKEN>`. 
 
@@ -86,7 +66,29 @@ First, we need to create a sample hosted Kafka environment - in this case, an Am
     terraform apply --auto-approve
     ```
 
-The terraform script will take 25-30 minutes to deploy. When the script completes, be sure to save the Terraform output values to a note. We will use these values in later workshop sections. 
+The Terraform script will take 25-30 minutes to deploy. When the script completes, be sure to save the Terraform output values to a note. We will use these values in later workshop sections. 
+
+**You can move on to the following steps while the resources are deploying.**
+
+### Create Confluent Cloud Account and API Key
+
+1. Head over to the [Confluent Cloud signup page](https://confluent.cloud/signup) and sign up for a new account.
+
+2. Watch your inbox for a confirmation email. Once you get the email, follow the link to proceed.
+
+3. At this point, you will be asked to create a cluster. **You can skip this step, as we will set up all required resources in the workshop.** 
+
+4. Go to the [API keys page](https://confluent.cloud/settings/api-keys). You can also navigate to the API keys page by expanding the sidebar menu in the Confluent Cloud Console and selecting API keys.
+
+5. Click **Add API key**.
+
+6. Select **My account** for the API key. Then, select **Next**
+
+7. Select **Cloud resource management** as the resource scope for the API key. Then, select **Next**.
+
+8. Give the API Key a name, then select **Next**. 
+
+7. Click **Create API key**. Then, **make sure you download the API key on this page. If you forget, you'll need to create a new key to download the values.**
 
 ## Workshop
 > Estimated time: 45 minutes
