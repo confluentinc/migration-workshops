@@ -115,7 +115,7 @@ This creates 2 scripts. Since the source MSK cluster is private, you need to fir
    ```
 
 2. Before running the migration scripts, edit the Cluster Link to enable Consumer Group Offset Sync
-   * Get the **Confluent Platform bootstrap endpoint:
+   * Get the **Confluent Platform bootstrap endpoint**:
       ```bash
       terraform -chdir=../migration_infra output confluent_platform_controller_bootstrap_server
       ```
