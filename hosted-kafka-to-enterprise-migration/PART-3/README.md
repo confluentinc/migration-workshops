@@ -123,14 +123,16 @@ This creates 2 scripts. Since the source MSK cluster is private, you need to fir
       ```bash
       echo "consumer.offset.sync.enable=true" > newFilters.properties
       echo "consumer.offset.group.filters={\"groupFilters\": [ { \"name\": \"*\", \"patternType\": \"LITERAL\", \"filterType\": \"INCLUDE\" } ]}" >> newFilters.properties
-
-      kafka-configs --bootstrap-server <CONFLUENT_PLATFORM_BOOTSTRAP> \
+      ```
+      ```bash
+      kafka-configs --bootstrap-server <CONFLUENT_PLATFORM_BOOTSTRAP>:9092 \
       --command-config destination-cluster.properties \
       --alter \
       --cluster-link cp-initiated-msk-link \
       --add-config-file newFilters.properties
-
-      kafka-configs --bootstrap-server <CONFLUENT_PLATFORM_BOOTSTRAP> \
+      ```
+      ```bash
+      kafka-configs --bootstrap-server <CONFLUENT_PLATFORM_BOOTSTRAP>:9092 \
       --command-config destination-cluster.properties \
       --alter \
       --cluster-link cp-to-cc-link \
