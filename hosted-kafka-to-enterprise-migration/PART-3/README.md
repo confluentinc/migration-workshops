@@ -183,9 +183,9 @@ This creates 2 scripts. Since the source MSK cluster is private, you need to fir
    You may notice that topic information is currently limited for this privately-networked Enterprise Cluster. If you want to view more topic-specific details, you can create the reverse proxy in the next section for a more granular view. 
 
 ### [Optional] View messages in Confluent Cloud Topics UI
-To be able to view the messages in the Topics UI. You will need to access the Topics UI on the Confluent Cloud cluster from the Windows bastion host. Execture the following steps from your laptop not the bastion host
+Because the Enterprise cluster is private, to view messages in the Topics UI you need to access the Topics UI via a Windows bastion host. Please perform the following steps from your laptop — **not directly on the bastion host**.
 
-1. Get Bastion host details: Run the following command"
+1. Get the Windows bastion host details: Run the following command"
 
    ```
    terraform output windows_bastion_ip
