@@ -52,38 +52,16 @@ cat dns_entries.txt
 sudo nano /etc/hosts
 ```
 
-### Review the Topic in Confluent Cloud
+### Stop producers and consumers
 
-1. Navigate to the [Environments page](https://confluent.cloud/environments?tab=cloud) in the Confluent Cloud console. 
-
-2. Select your `target-environment`.
-
-3. Select **Clusters**, then select your `target-cluster`. 
-
-4. Navigate to the **Topics** page within the cluster. Here, you can view operational details about your topic. 
-
-### Configure Environment Files
-#### Promote the Target Topic
-Before running the consumer and producer on the new cluster, you need to promote the mirror topic to make it writable:
-
-1. Login to Confluent Cloud CLI **on the bastion host**:
+1. If any are running, stop the MSK applications:
    ```bash
-   confluent login --no-browser
+   pkill -f "orders_producer.py"
+   pkill -f "orders_consumer.py"
    ```
 
-2. Set the target environment:
-   ```bash
-   confluent environment list
-   confluent environment use <target environment>
-   ```
-
-3. Set the target cluster:
-   ```bash
-   confluent kafka cluster list
-   confluent kafka cluster use <target cluster>
-   ```
-
-### Make the Target Cluster Writable
+### Promote the Target Topic
+Before running the consumer and producer on the new cluster, you need to promote the mirror topic to make it writable.
 
 The mirror topics are read-only by default. To make a mirror topic writable (i.e., change it from read-only, mirrored state to a regular, independent, writable topic) in Confluent Kafka (whether in Confluent Platform or Confluent Cloud with Cluster Linking), you need to use either the promote or failover command. This operation is commonly called "promoting" the mirror topic, and is an essential step in cutover, DR, or migration workflows.
 
@@ -100,29 +78,29 @@ Execute the following steps to make the mirror topic writable:
 
 3. **Promote the mirror topic**:
    ```bash
-   confluent kafka mirror promote orders --link cp-to-cc-link --cluster <ENTERPRISE_CLUSTER_ID>
+   confluent kafka mirror promote orders --link cp-to-cc-link
    ```
    This will check lag, synchronize everything, and make the topic writable only if fully caught up.
 
 ### Execute the Cutover
 
-1. If any are running, stop the MSK applications:
+1. Switch to Confluent Cloud environment:
    ```bash
-   pkill -f "orders_producer.py"
-   pkill -f "orders_consumer.py"
-   ```
-
-2. Switch to Confluent Cloud environment:
-   ```bash
+   cd ~/clients
    source env.cc
    ```
 
-3. Start applications against Confluent Cloud:
+2. Start applications against Confluent Cloud:
    ```bash
    python3 orders_producer.py
    ```
 
-   and 
+3. In a new session do the same for consumers
+
+   ```bash
+   cd ~/clients
+   source env.cc
+   ```
 
    ```bash
    python3 orders_consumer.py

@@ -478,3 +478,96 @@ resource "aws_instance" "bastion_host" {
     Name = "${var.environment}-migration-bastion-host"
   }
 }
+
+# ------------------------------------------------------
+# Windows EC2 Instance
+# ------------------------------------------------------
+
+
+# Security Group for Windows EC2 Instance
+resource "aws_security_group" "windows_sg" {
+  name        = "windows-sg-${random_id.bucket_suffix.hex}"
+  description = "Allow RDP traffic"
+  vpc_id      = aws_vpc.msk_vpc.id
+
+  ingress {
+    from_port   = 3389
+    to_port     = 3389
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "windows-sg-${random_id.bucket_suffix.hex}"
+  }
+}
+
+data "aws_ami" "windows" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["Windows_Server-2025-English-Full-Base-*"]
+  }
+}
+
+resource "aws_instance" "windows_instance" {
+  ami                    = data.aws_ami.windows.image_id
+  instance_type          = "t3.large"
+  key_name               = aws_key_pair.tf_key.key_name
+  vpc_security_group_ids = [aws_security_group.windows_sg.id]
+  subnet_id              = aws_subnet.bastion_public_subnet[0].id
+  get_password_data      = true
+
+  root_block_device {
+    volume_size = 30
+  }
+
+  tags = {
+    Name = "windows-instance-${random_id.bucket_suffix.hex}"
+  }
+}
+
+
+resource "aws_key_pair" "tf_key" {
+  key_name   = "key-${random_id.bucket_suffix.hex}"
+  public_key = tls_private_key.rsa-4096-example.public_key_openssh
+}
+
+# RSA key of size 4096 bits
+resource "tls_private_key" "rsa-4096-example" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+
+}
+
+resource "local_file" "tf_key" {
+  content  = tls_private_key.rsa-4096-example.private_key_pem
+  filename = "${path.module}/sshkey-${aws_key_pair.tf_key.key_name}"
+  file_permission = "0400"
+}
+
+
+
+output "windows_bastion_ip" {
+  description = "IP of the Windows bastion host"
+  value       = aws_instance.windows_instance.public_ip
+} 
+
+output "windows_bastion_username" {
+  description = "Username of the windows bastion host"
+  value       = "Administrator"
+} 
+
+output "windows_bastion_password" {
+  description = "Password of the windows bastion host"
+  value       = nonsensitive(rsadecrypt(aws_instance.windows_instance.password_data, local_file.tf_key.content))
+} 
