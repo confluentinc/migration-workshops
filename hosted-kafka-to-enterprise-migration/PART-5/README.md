@@ -3,24 +3,31 @@
 In this final section, we will safely shut down all workshop resources and clean up the migration environment. 
 
 ### Cleanup Migration Resources
-1. Navigate to the `migration_infra` folder on your bastion host and destroy the Terraform resources. 
+1. Navigate to the `migrate_topics` folder on your bastion host and destroy the Terraform resources. 
 
    ```bash
-   cd ~/migration_infra
+   cd ~/migrate_topics
+   terraform destroy
+   ```
+
+2. Navigate to the `migration-infra` folder on your bastion host and destroy the Terraform resources. 
+
+   ```bash
+   cd ~/migration-infra
    terraform destroy
    ```
 
    You'll need to enter your Confluent Cloud API Key and API Secret from the [Workshop Introduction](../README.md). Note, this is **not** the Cluster API Key created with the `migration_infra` resources. You'll also need to re-enter the SASL username and password for the MSK cluster. 
 
-2. Navigate to the `reverse_proxy` folder on your bastion host and destroy the Terraform resources. 
+3. Navigate to the `target_infra` folder on your bastion host and destroy the Terraform resources. 
 
    ```bash
-   cd ~/reverse_proxy
+   cd ~/target_infra
    terraform destroy
    ```
 
 ### Cleanup MSK Infrastructure
-1. Navigate to the `terraform` directory and destroy the Terraform resources:
+1. **On your local machine**, navigate to the workshop `terraform` directory and destroy the Terraform resources:
    ```bash
    cd path/to/hosted-kafka-to-enterprise-migration/terraform
    terraform destroy

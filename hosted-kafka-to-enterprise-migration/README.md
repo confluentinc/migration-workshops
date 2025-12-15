@@ -13,7 +13,7 @@ This repository steps through an example migration from hosted Kafka services to
 
 In this workshop, we will use Terraform to deploy the source MSK cluster infrastructure and the Confluent KCP CLI to deploy all migration infrastructure.
 
-![image](./assets/migration-architecture.png)
+![image](./assets/external-cluster-link.png)
 
 ## Prerequisites 
 
@@ -21,7 +21,15 @@ To perform this workshop yourself, you will need the following:
 
 * An active AWS Account with read and write permissions for Amazon MSK, Amazon EC2, and AWS VPC resources. 
 * An active Confluent Cloud account and API key with cloud management permissions. 
-* **Command Line tools**: Run ```brew install awscli git terraform``` or, for Windows:
+* **Command Line tools**: 
+
+For Mac, run:
+
+    ```bash
+    brew install awscli git terraform
+    ``` 
+    
+For Windows, run:
 
     ```cmd
     winget install --id Amazon.AWSCLI -e && `
