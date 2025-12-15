@@ -1,10 +1,8 @@
 ## Part 3 - Provision Migration Resources with KCP CLI
 
-In this section, you will use the Confluent KCP CLI to provision all necessary migration infrastructure and establish Cluster Links between MSK and Confluent Cloud. Because the source cluster is a private MSK cluster, you will need to use a **jump cluster** as an intermediate step between your source cluster and the target Confluent Cloud Enterprise Cluster. This also means that you will need two Cluster Link configurations - one from your source cluster to the Confluent Platform jump cluster, and another from the jump cluster to the Confluent Cloud Enterprise Cluster. 
+In this section, you will use the Confluent KCP CLI to provision all necessary migration infrastructure and establish a Cluster Link between MSK and Confluent Cloud. 
 
-Creating all of this infrastructure manually can be complex and time consuming. Luckily, the KCP CLI automates creation of all of the infrastructure and networking components required.
-
-![image](../assets/migration-arch-part-3.png)
+Creating all of the required infrastructure manually can be complex and time consuming. Luckily, the KCP CLI automates creation of all of the infrastructure and networking components with a few commands.
 
 ### Requirements
 
@@ -44,23 +42,43 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
    --credentials-file cluster-credentials.yaml
    ```
 
+### Create the target infrastructure
+1. Run the following command to create the target infrastructure Terraform. Make sure to substitute your own values where needed: 
+   ```bash
+   kcp create-asset target-infra \
+   --state-file kcp-state.json \
+   --cluster-arn <YOUR_CLUSTER_ARN> \
+   --needs-environment true \
+   --env-name target-env \
+   --needs-cluster true \
+   --cluster-name target-cluster \
+   --cluster-type enterprise \
+   --needs-private-link true \
+   --subnet-cidrs "10.0.10.0/24","10.0.20.0/24","10.0.30.0/24"
+   ```
+
+   ```bash
+   cd target_infra
+   teraform init
+   terraform apply
+   ```
+
 ### Create the migration infrastructure 
-1. Run the following command to create the migration infrastructure Terraform. Make sure to substitute in your own values for `<YOUR_VPC_ID>`: 
+1. Run the following command to create the migration infrastructure Terraform. Make sure to substitute your own values where needed: 
    ```bash 
    kcp create-asset migration-infra \
    --state-file kcp-state.json \
    --cluster-arn <YOUR_CLUSTER_ARN> \
    --type 2 \
-   --cc-env-name target-environment \
-   --cc-cluster-name target-cluster \
-   --cc-cluster-type enterprise \
-   --ansible-control-node-subnet-cidr 10.0.80.0/24 \
-   --jump-cluster-broker-subnet-config us-west-2a:10.0.10.0/24,us-west-2b:10.0.20.0/24,us-west-2c:10.0.30.0/24
+   --target-environment-id <YOUR_ENV-ID> \
+   --cluster-link-name msk-to-cc-link \
+   --target-cluster-id <YOUR_CLUSTER_ID> \
+   --target-rest-endpoint <YOUR_CLUSTER_REST_ENDPOINT>
    ```
 
 2. Navigate to the newly-created `migration_infra` directory and create the infrastructure with terraform: 
    ```bash 
-   cd migration_infra
+   cd migration-infra
    terraform init
    terraform apply --auto-approve
    ```
@@ -72,12 +90,7 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
 
 ![image](../assets/cluster.png)
 
-6. Now you need to add the newly-created **credentials**, **Confluent Cloud bootstrap endpoint** to your `env.cc` file. First, get the values from the terraform output:
-   ```bash
-   terraform output confluent_cloud_cluster_bootstrap_endpoint
-   terraform output confluent_cloud_cluster_api_key
-   terraform output confluent_cloud_cluster_api_key_secret
-   ```
+6. Now you need to add the newly-created **credentials**, **Confluent Cloud bootstrap endpoint** to your `env.cc` file. You'll need to log into Confluent Cloud and view the new cluster to get this information. 
 
 7. Navigate to your clients directory and update the `env.cc` file with the cluster API credentials:
    ```bash
@@ -94,8 +107,8 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
    export CC_API_SECRET="<CLUSTER_API_SECRET>"
    ```
 
-### Create and run the migration scripts
-1. Run the following command to create the migration scripts: 
+### Create the mirror topics
+1. Run the following command to create the mirror topics: 
    ```bash
    cd ~/
    ```
@@ -104,90 +117,30 @@ Complete [Part 2: Set Up and Test Client Applications](../PART-2/README.md) befo
    kcp create-asset migrate-topics \
    --state-file kcp-state.json \
    --cluster-arn <YOUR_CLUSTER_ARN> \
-   --migration-infra-folder migration_infra
+   --target-cluster-id <YOUR_CLUSTER_ID> \
+   --target-cluster-rest-endpoint <YOUR_CLUSTER_REST_ENDPOINT> \
+   --target-cluster-link-name msk-to-cc-link
    ```
 
-This creates 2 scripts. Since the source MSK cluster is private, you need to first mirror your topics to the Confluent Platform jump cluster using the `msk-to-cp-mirror-topics` script, and then mirror from your jump cluster to the target Confluent Cloud Enterprise Cluster using the `cp-to-cc-mirror-topics` script.
+This creates mirror topics on your cluster link and begins data replication for migration. 
 
 3. Navigate to the new `migrate_topics` folder:
    ```bash 
    cd migrate_topics
+   terraform init 
+   terraform apply 
    ```
 
-2. Before running the migration scripts, edit the Cluster Link to enable Consumer Group Offset Sync
-   * Get the **Confluent Platform bootstrap endpoint**:
-      ```bash
-      terraform -chdir=../migration_infra output confluent_platform_controller_bootstrap_server
-      ```
-   * Run the following to enable it on the jump Confluent Platform cluster:
-      ```bash
-      echo "consumer.offset.sync.enable=true" > newFilters.properties
-      echo "consumer.offset.group.filters={\"groupFilters\": [ { \"name\": \"*\", \"patternType\": \"LITERAL\", \"filterType\": \"INCLUDE\" } ]}" >> newFilters.properties
-      ```
-      ```bash
-      kafka-configs --bootstrap-server <CONFLUENT_PLATFORM_BOOTSTRAP>:9092 \
-      --command-config destination-cluster.properties \
-      --alter \
-      --cluster-link cp-initiated-msk-link \
-      --add-config-file newFilters.properties
-      ```
-      ```bash
-      kafka-configs --bootstrap-server <CONFLUENT_PLATFORM_BOOTSTRAP>:9092 \
-      --command-config destination-cluster.properties \
-      --alter \
-      --cluster-link cp-to-cc-link \
-      --add-config-file newFilters.properties
-      ```
-   Now we need to enable the same setting on Confluent Cloud. We will use the Confluent Cloud CLI for this.
-
-   * Login to Confluent Cloud CLI **on the bastion host**:
-      ```bash
-      confluent login --no-browser
-      ```
-
-   * Set the target environment:
-      ```bash
-      confluent environment list
-      ```
-      ```bash
-      confluent environment use <target environment>
-      ```
-   
-   * Set the target cluster:
-      ```bash
-      confluent kafka cluster list
-      ```
-      ```bash
-      confluent kafka cluster use <target cluster>
-      ```
-   * Set `consumer.offset.sync.enable` to `true`:
-      ```bash
-      confluent kafka link configuration update cp-to-cc-link --config newFilters.properties
-      ```
-
-
-3. Run the migration scripts:
-   ```bash 
-   ./msk-to-cp-mirror-topics.sh
-   ```
-
-   Wait for this to finish, then run: 
-   ```bash 
-   ./cp-to-cc-mirror-topics.sh
-   ```
-
-   These scripts establish your Cluster Links and begin mirroring your topics for you.  
-
-   You can now navigate to the **Topics** menu inside your cluster in Confluent Cloud and view your orders topic. 
+3. You can now navigate to the **Topics** menu inside your cluster in Confluent Cloud and view your orders topic. 
 
    ![image](../assets/topic.png)
 
-   You may notice that topic information is currently limited for this privately-networked Enterprise Cluster. If you want to view more topic-specific details, you can create the reverse proxy in the next section for a more granular view. 
+   You may notice that topic information is currently limited for this privately-networked Enterprise Cluster. If you want to view more topic-specific details, you can use the Windows bastion host in the next section for a more granular view. 
 
 ### [Optional] View messages in Confluent Cloud Topics UI
 Because the Enterprise cluster is private, to view messages in the Topics UI you need to access the Topics UI via a Windows bastion host. Please perform the following steps from your laptop — **not directly on the bastion host**.
 
-1. Get the Windows bastion host details: Run the following command"
+1. Get the Windows bastion host details: Run the following command:
 
    ```
    terraform output windows_bastion_ip
@@ -197,7 +150,7 @@ Because the Enterprise cluster is private, to view messages in the Topics UI you
 
 2. RDP to the Source (AWS) Bastion Host.
 
-3. In the [Topics UI](https://confluent.cloud/go/topics), select the destination environemnt and cluster.
+3. In the [Topics UI](https://confluent.cloud/go/topics), select the destination environment and cluster.
 
 4. Verify mirrored topics appear in your Enterprise cluster.
    ![Verify Screenshot](../assets/verify.png)
@@ -206,7 +159,7 @@ Because the Enterprise cluster is private, to view messages in the Topics UI you
 
 ### Next Steps 
 
-With the help of the KCP CLI, you've now created the entire migration infrastructure, including the jump cluster you need for a private cluster migration to Confluent Cloud, and the target Confluent Cloud Enterprise cluster. You also established the Cluster Links to begin topic mirroring from your MSK cluster to your Confluent Cloud Enterprise Cluster. In the next section, you will cut over your client applications to use the new Confluent Cloud cluster, completing the migration. 
+With the help of the KCP CLI, you've now created the entire migration infrastructure and the target Confluent Cloud Enterprise cluster. You also established the Cluster Link to begin topic mirroring from your MSK Cluster to your Confluent Cloud Enterprise Cluster. In the next section, you will cut over your client applications to use the new Confluent Cloud cluster, completing the migration. 
 
 ## Topics
 

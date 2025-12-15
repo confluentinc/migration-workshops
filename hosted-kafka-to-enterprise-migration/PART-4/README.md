@@ -4,53 +4,9 @@ In this section, you will perform the actual cutover of client applications from
 
 Mirror topics in Cluster Links can't be written to. To convert a mirror topic to a writable topic, you need to **promote** the topic, which detaches it from the Cluster Link. In this section, you will verify that there's no lag on your mirror topic, and then will promote it to be writable for use with your client applications. Then, you'll be able to perform the cutover with your client apps. 
 
-![image](../assets/migration-arch-part-4.png)
-
 ### Requirements
 
 Complete [Part 3: Provisioning Migration Resources with KCP CLI](../PART-3/README.md) before starting Part 4. 
-
-### Optional - Deploy Reverse Proxy and Configure DNS
-
-Before connecting to the Confluent Cloud resources, you need to deploy the reverse proxy and configure DNS entries to enable secure access to your private Confluent Cloud cluster.
-
-**Note, the reverse proxy setup is optional, but gives you better visibility into your migrated data in the Confluent Cloud console from your local system.** If you'd like to skip it, move to **Configure Environment Files** below. 
-
-#### Deploy the Reverse Proxy
-
-1. Using the KCP CLI, create the `reverse_proxy` terraform resources:
-```bash
-kcp create-asset reverse-proxy \
---region us-west-2 \
---vpc-id <YOUR_VPC_ID> \
---migration-infra-folder migration_infra \
---reverse-proxy-cidr 10.0.45.0/24
-```
-
-2. Navigate to the generated `reverse_proxy` directory and deploy the infrastructure:
-
-```bash
-cd reverse_proxy
-terraform init
-terraform plan
-terraform apply
-```
-
-3. When prompted, type `yes` to confirm the deployment.
-
-#### Configure Local DNS
-
-1. The reverse proxy generates a `dns_entries.txt` file containing DNS entries that you must manually add to your local machine's `/etc/hosts` file:
-
-```bash
-cat dns_entries.txt
-```
-
-2. Copy the full output, then open the `/etc/hosts` file and append the `dns_entries.txt` contents. 
-
-```bash
-sudo nano /etc/hosts
-```
 
 ### Stop producers and consumers
 
@@ -70,15 +26,37 @@ The mirror topics are read-only by default. To make a mirror topic writable (i.e
 Execute the following steps to make the mirror topic writable:
 
 1. **Confirm the current status of the mirror topic** (and check that mirroring lag is zero if doing a planned migration):
-   ```bash
-   confluent kafka mirror describe orders --link cp-to-cc-link
-   ```
+
+   * First, log in to the Confluent CLI: 
+      ```bash
+      confluent login --no-browser
+      ```
+
+   * Set the target environment:
+      ```bash
+      confluent environment list
+      ```
+      ```bash
+      confluent environment use <target-environment>
+      ```
+   
+   * Set the target cluster:
+      ```bash
+      confluent kafka cluster list
+      ```
+      ```bash
+      confluent kafka cluster use <target-cluster>
+
+   * Finally, get the details of your mirror topic
+      ```bash
+      confluent kafka mirror describe orders --link msk-to-cc-link
+      ```
 
 2. **To promote, ensure network reachability between the destination and source clusters, and that lag is zero.**
 
 3. **Promote the mirror topic**:
    ```bash
-   confluent kafka mirror promote orders --link cp-to-cc-link
+   confluent kafka mirror promote orders --link msk-to-cc-link
    ```
    This will check lag, synchronize everything, and make the topic writable only if fully caught up.
 
