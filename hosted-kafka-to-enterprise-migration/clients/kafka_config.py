@@ -51,6 +51,26 @@ class ConfigManager:
             client_id="orders-msk-scram-client"
         )
     
+    def get_gateway_config(self) -> KafkaConfig:
+        """Gateway configuration -- clients always connect here during migration.
+        Uses SCRAM-SHA-512: passthrough to MSK before cutover, swap to CC after."""
+        bootstrap_servers = os.getenv("GATEWAY_BOOTSTRAP_SERVERS", "localhost:9595")
+
+        sasl_username = os.getenv("GATEWAY_SASL_USERNAME")
+        sasl_password = os.getenv("GATEWAY_SASL_PASSWORD")
+
+        if not sasl_username or not sasl_password:
+            raise ValueError("GATEWAY_SASL_USERNAME and GATEWAY_SASL_PASSWORD must be set for Gateway authentication")
+
+        return KafkaConfig(
+            bootstrap_servers=bootstrap_servers,
+            security_protocol="SASL_PLAINTEXT",
+            sasl_mechanism="SCRAM-SHA-512",
+            sasl_username=sasl_username,
+            sasl_password=sasl_password,
+            client_id="orders-gateway-client"
+        )
+
     def get_confluent_cloud_config(self) -> KafkaConfig:
         """Confluent Cloud configuration"""
         bootstrap_servers = os.getenv("CC_BOOTSTRAP_SERVERS")
@@ -77,6 +97,7 @@ class ConfigManager:
         config_map = {
             "msk": self.get_msk_config,
             "msk-scram": self.get_msk_scram_config,
+            "gateway": self.get_gateway_config,
             "cc": self.get_confluent_cloud_config
         }
         
@@ -116,7 +137,7 @@ class ConfigManager:
                 # For SCRAM-SHA-512 mechanism (MSK SCRAM)
                 if config.sasl_username:
                     kafka_config['sasl_plain_username'] = config.sasl_username
-                if config.sasl_username:
+                if config.sasl_password:
                     kafka_config['sasl_plain_password'] = config.sasl_password
             else:
                 # For other SASL mechanisms

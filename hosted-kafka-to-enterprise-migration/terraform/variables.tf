@@ -27,19 +27,7 @@ variable "availability_zones" {
 variable "kafka_version" {
   description = "Kafka version for MSK cluster (4.0.x.kraft uses KRaft, no Zookeeper)"
   type        = string
-  default     = "4.0.x.kraft"
-}
-
-variable "broker_node_instance_type" {
-  description = "Instance type for MSK broker nodes"
-  type        = string
-  default     = "kafka.m5.large"
-}
-
-variable "broker_node_storage_size" {
-  description = "Storage size for MSK broker nodes in GB"
-  type        = number
-  default     = 100
+  default     = "3.9.x.kraft"
 }
 
 variable "number_of_broker_nodes" {
@@ -62,12 +50,6 @@ variable "allowed_cidr_blocks" {
 
 variable "enable_logging" {
   description = "Enable logging for MSK cluster"
-  type        = bool
-  default     = true
-}
-
-variable "enable_monitoring" {
-  description = "Enable enhanced monitoring for MSK cluster"
   type        = bool
   default     = true
 }
@@ -98,9 +80,9 @@ variable "create_bastion_host" {
 }
 
 variable "bastion_instance_type" {
-  description = "Instance type for the bastion host"
+  description = "Instance type for the bastion host (t3.large recommended for k3s + CFK + Gateway)"
   type        = string
-  default     = "t2.medium"
+  default     = "t3.large"
 }
 
 variable "bastion_public_subnet_cidr" {
@@ -113,4 +95,47 @@ variable "existing_bastion_key_pair_name" {
   description = "Existing EC2 key pair name to use for bastion host (if provided, new key pair will not be created)"
   type        = string
   default     = ""
+}
+
+variable "bastion_allowed_ssh_cidrs" {
+  description = "CIDR blocks allowed to SSH to the bastion host. Defaults to 0.0.0.0/0 (open) for workshop convenience."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "broker_node_instance_type" {
+  description = "Instance type for MSK broker nodes"
+  type        = string
+  default     = "kafka.m5.large"
+}
+
+variable "broker_node_storage_size" {
+  description = "Storage size for MSK broker nodes in GB"
+  type        = number
+  default     = 100
+}
+
+variable "enable_monitoring" {
+  description = "Enable enhanced monitoring for MSK cluster"
+  type        = bool
+  default     = true
+}
+
+# Optional migration tracks (opt-in)
+variable "enable_acl_migration" {
+  description = "Enable the ACL migration track in workshop docs/scripts (no Terraform resources gated)."
+  type        = bool
+  default     = false
+}
+
+variable "enable_schema_migration" {
+  description = "Provision AWS Glue Schema Registry + orders Avro schemas for the schema-migration track."
+  type        = bool
+  default     = false
+}
+
+variable "enable_connector_migration" {
+  description = "Provision MSK Connect S3-sink connector (plugin bucket, IAM role, log group, archive bucket, connector) for the connector-migration track."
+  type        = bool
+  default     = false
 }

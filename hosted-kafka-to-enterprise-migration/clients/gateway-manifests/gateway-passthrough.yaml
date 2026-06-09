@@ -1,0 +1,46 @@
+# Gateway initial deployment - STEP-0
+# Passthrough mode: client SCRAM traffic flows directly to MSK
+# This is the minimal Gateway config before Confluent Cloud exists
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: confluent
+---
+apiVersion: platform.confluent.io/v1beta1
+kind: Gateway
+metadata:
+  name: workshop-gateway
+  namespace: confluent
+spec:
+  replicas: 2
+  image:
+    application: confluentinc/cpc-gateway:1.2.0-1-ubi9
+    init: confluentinc/confluent-init-container:3.2.1
+  streamingDomains:
+    - name: source-msk
+      type: kafka
+      kafkaCluster:
+        bootstrapServers:
+          - id: SCRAM
+            endpoint: SASL_SSL://${MSK_FIRST_BOOTSTRAP}
+            tls:
+              secretRef: msk-tls
+        nodeIdRanges:
+          - name: pool-1
+            start: 1
+            end: 3
+  routes:
+    - name: migration-route
+      endpoint: localhost:9595
+      brokerIdentificationStrategy:
+        type: port
+      streamingDomain:
+        name: source-msk
+        bootstrapServerId: SCRAM
+      security:
+        auth: passthrough
+  externalAccess:
+    type: loadBalancer
+    loadBalancer:
+      domain: localhost

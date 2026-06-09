@@ -1,0 +1,20 @@
+# --- Sensitive: never commit ---
+# Terraform-generated SSH private keys for the bastion host
+terraform/ssh.pem
+terraform/sshkey-key-*
+
+# kcp tool output — contains real AWS account IDs, ARNs, and Secrets Manager references
+terraform/kcp-state.json
+terraform/kcp.log
+terraform/cluster-credentials.yaml
+
+# --- Generated / local artifacts ---
+# Written by deploy.sh
+terraform/features.auto.tfvars
+
+# Downloaded connector plugin binaries
+terraform/plugins/
+
+# Terraform state at the workshop root (terraform/.gitignore covers terraform/*.tfstate)
+terraform.tfstate
+terraform.tfstate.*
