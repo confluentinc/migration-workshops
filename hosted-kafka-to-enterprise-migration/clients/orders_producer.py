@@ -164,7 +164,7 @@ def main():
                        help='Interval between orders in seconds (default: 1.0)')
     parser.add_argument('--max-orders', type=int, default=None,
                        help='Maximum number of orders to send (default: unlimited)')
-    parser.add_argument('--env', choices=['msk', 'msk-scram', 'cc'], 
+    parser.add_argument('--env', choices=['msk', 'msk-scram', 'gateway', 'cc'],
                        help='Kafka environment (overrides KAFKA_ENV)')
     
     args = parser.parse_args()

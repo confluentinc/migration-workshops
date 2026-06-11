@@ -1,0 +1,59 @@
+# Gateway switchover state - applied by kcp migration execute (switch+unblock phase)
+# MSK streaming domain removed, single route with auth swap to Confluent Cloud
+# Clients keep their SCRAM credentials; Gateway swaps to SASL/PLAIN for CC
+---
+apiVersion: platform.confluent.io/v1beta1
+kind: Gateway
+metadata:
+  name: workshop-gateway
+  namespace: confluent
+spec:
+  replicas: 2
+  image:
+    application: confluentinc/cpc-gateway:1.2.0-1-ubi9
+    init: confluentinc/confluent-init-container:3.2.1
+  secretStores:
+    - name: vault-store
+      provider:
+        type: Vault
+        configSecretRef: vault-config
+  streamingDomains:
+    - name: confluent-cloud
+      type: kafka
+      kafkaCluster:
+        bootstrapServers:
+          - id: SASL_PLAIN
+            endpoint: SASL_SSL://${CC_BOOTSTRAP_SERVERS}
+            tls:
+              secretRef: cc-tls
+        nodeIdRanges:
+          - name: pool-1
+            start: 0
+            end: 100
+  routes:
+    - name: migration-route
+      endpoint: localhost:9595
+      brokerIdentificationStrategy:
+        type: port
+      streamingDomain:
+        name: confluent-cloud
+        bootstrapServerId: SASL_PLAIN
+      security:
+        auth: swap
+        secretStore: vault-store
+        client:
+          authentication:
+            type: scram
+            scram:
+              alterScramCredentials: true
+              admin:
+                secretRef: scram-admin-credentials
+        cluster:
+          authentication:
+            type: plain
+            jaasConfigPassThrough:
+              secretRef: plain-jaas
+  externalAccess:
+    type: loadBalancer
+    loadBalancer:
+      domain: localhost

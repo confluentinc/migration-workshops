@@ -152,7 +152,7 @@ usage() {
     echo "Usage: $0 {cutover|status|stop}"
     echo ""
     echo "Commands:"
-    echo "  cutover <env>  - Switch to specified environment (msk, msk-scram, cc)"
+    echo "  cutover <env>  - Switch to specified environment (msk, msk-scram, gateway, cc)"
     echo "  status         - Show current process status"
     echo "  stop           - Stop all processes"
     echo ""
@@ -172,9 +172,9 @@ case "$1" in
             exit 1
         fi
         
-        if [[ "$2" != "msk" && "$2" != "msk-scram" && "$2" != "cc" ]]; then
+        if [[ "$2" != "msk" && "$2" != "msk-scram" && "$2" != "gateway" && "$2" != "cc" ]]; then
             error "Invalid environment: $2"
-            error "Valid environments: msk, msk-scram, cc"
+            error "Valid environments: msk, msk-scram, gateway, cc"
             exit 1
         fi
         

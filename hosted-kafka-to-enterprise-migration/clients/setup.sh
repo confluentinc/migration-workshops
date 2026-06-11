@@ -15,12 +15,17 @@ sudo yum install -y python3 python3-pip
 
 # Install required Python packages
 echo "📚 Installing Python dependencies..."
-sudo pip3 install kafka-python boto3
+sudo pip3 install kafka-python boto3 requests
 
 # Make scripts executable
 echo "🔧 Making scripts executable..."
 chmod +x orders_producer.py
 chmod +x orders_consumer.py
+chmod +x setup_acls.py
+chmod +x setup_schemas.py
+chmod +x setup_connector.py
+chmod +x setup_gateway.sh
+chmod +x configure_gateway_target.sh
 
 # Create logs directory
 echo "📁 Creating logs directory..."
@@ -68,11 +73,11 @@ chmod +x create_topic.py
 
 echo "✅ Setup complete!"
 echo ""
-echo "🔧 Configuration steps:"
-echo "1. Edit the appropriate environment file (env.msk, env.msk-scram, or env.cc)"
-echo "2. Source the environment file: source env.msk"
-echo "3. Create the topic: python3 create_topic.py"
-echo "4. Start the consumer: python3 orders_consumer.py"
-echo "5. Start the producer: python3 orders_producer.py"
+echo "🔧 Next steps:"
+echo "1. Source the MSK environment:  source env.msk"
+echo "2. Deploy the Gateway:          ./setup_gateway.sh"
+echo "3. Source the Gateway env:       source env.gateway"
+echo "4. Start the producer:           python3 orders_producer.py"
+echo "5. Start the consumer:           python3 orders_consumer.py"
 echo ""
-echo "🔄 For cutover, switch environment files and restart the applications" 
+echo "🔄 Clients connect through Gateway for zero-cut migration"

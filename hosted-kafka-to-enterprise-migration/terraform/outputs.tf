@@ -51,8 +51,6 @@ output "private_subnet_ids" {
   value       = aws_subnet.msk_private_subnets[*].id
 }
 
-
-
 output "msk_security_group_id" {
   description = "Security group ID for MSK cluster"
   value       = aws_security_group.msk_cluster_sg.id
@@ -62,8 +60,6 @@ output "msk_client_security_group_id" {
   description = "Security group ID for MSK clients"
   value       = aws_security_group.msk_client_sg.id
 }
-
-
 
 output "msk_configuration_arn" {
   description = "ARN of the MSK configuration"
@@ -93,6 +89,16 @@ output "s3_logs_bucket_name" {
 output "aws_region" {
   description = "AWS region where resources are deployed"
   value       = var.aws_region
+}
+
+output "glue_registry_name" {
+  description = "Name of the Glue Schema Registry"
+  value       = var.enable_schema_migration ? aws_glue_registry.msk_schemas[0].registry_name : null
+}
+
+output "glue_registry_arn" {
+  description = "ARN of the Glue Schema Registry"
+  value       = var.enable_schema_migration ? aws_glue_registry.msk_schemas[0].arn : null
 }
 
 # Connection information for Confluent Cluster Linking
