@@ -571,7 +571,7 @@ resource "aws_instance" "bastion_host" {
 
     echo "export PATH=/home/ec2-user/confluent-8.0.0/bin:$PATH" >> /home/ec2-user/.bashrc
 
-    curl -L -o kcp.tar.gz https://github.com/confluentinc/kcp/releases/download/v0.8.1/kcp_linux_amd64.tar.gz
+    curl -L -o kcp.tar.gz https://github.com/confluentinc/kcp/releases/download/v0.8.3/kcp_linux_amd64.tar.gz
     tar -xzf kcp.tar.gz
     chmod +x ./kcp/kcp
     sudo mv ./kcp/kcp /usr/local/bin/kcp

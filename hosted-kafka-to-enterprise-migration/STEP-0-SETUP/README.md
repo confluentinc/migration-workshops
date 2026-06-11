@@ -199,7 +199,7 @@ The Terraform deployment automatically created an MSK Connect S3 Sink connector 
 
    You should see JSON files appearing in the S3 bucket organized by date/time partitions.
 
-   KCP will discover this connector in [Step 1](../STEP-1-DISCOVER/README.md) and migrate it in [Step 3](../STEP-3-MIGRATE-DATA/README.md).
+   You will migrate this connector to a fully-managed Confluent Cloud connector in [Step 3](../STEP-3-MIGRATE-DATA/README.md).
 
 </details>
 

@@ -2,7 +2,8 @@
 
 In this step, you'll migrate your Kafka topics from MSK to Confluent Cloud. **ACLs, schemas, and connectors are optional tracks** — at the end of this step, follow only the dropdown sections for the tracks you enabled at deploy time. Each resource type follows the same pattern:
 
-- **Topics** (required), plus **Schemas, ACLs, and Connectors** (optional): KCP CLI generates Terraform assets, then you apply them ("generate then apply").
+- **Topics** (required), plus **Schemas and ACLs** (optional): KCP CLI generates Terraform assets, then you apply them ("generate then apply").
+- **Connectors** (optional): recreated as fully-managed connectors through the Confluent Cloud Console.
 
 ### Requirements
 
@@ -169,40 +170,17 @@ In [Step 1](../STEP-1-DISCOVER/README.md), KCP discovered the `orders-key` and `
 <details>
 <summary><b>Optional: Migrate Connectors</b></summary>
 
-In [Step 0](../STEP-0-SETUP/README.md), you verified that an S3 Sink connector (`dev-orders-s3-sink`) is running on MSK Connect. Now you'll use the KCP CLI to generate Terraform that migrates it to a fully-managed connector in Confluent Cloud.
+In [Step 0](../STEP-0-SETUP/README.md), you verified that an S3 Sink connector (`dev-orders-s3-sink`) is running on MSK Connect. Now you'll recreate it as a fully-managed connector in Confluent Cloud through the Confluent Cloud Console.
 
-1. **Export the Confluent Cloud API key details** from the target infrastructure terraform:
-  ```bash
-   export CC_API_KEY=$(cd ~/target_infra && terraform output -raw kafka_api_key_id)
-   export CC_API_SECRET=$(cd ~/target_infra && terraform output -raw kafka_api_key_secret)
-  ```
-2. **Generate connector migration Terraform**:
-  ```bash
-   cd ~/
-   kcp create-asset migrate-connectors msk \
-   --state-file kcp-state.json \
-   --cluster-id $CLUSTER_ARN \
-   --cc-environment-id $TARGET_ENV_ID \
-   --cc-cluster-id $TARGET_CLUSTER_ID \
-   --cc-api-key $CC_API_KEY \
-   --cc-api-secret $CC_API_SECRET
-  ```
-3. **Apply the generated Terraform**:
-  ```bash
-   cd ~/migrate_connectors
-   terraform init
-   terraform apply
-  ```
-  <details>
-  <summary><b>Optional: UI steps</b></summary>
+> **Note:** KCP v0.8.2 removed MSK Connect scanning, so `kcp discover` no longer captures connectors in `kcp-state.json` and `kcp create-asset migrate-connectors msk` finds nothing to migrate. Deploy the fully-managed connector through the Console instead.
 
-   You can deploy the fully-managed S3 Sink connector through the Confluent Cloud Console instead.
-  1. From the target cluster overview, open **Connectors** → **Add connector**.
+1. **Deploy the fully-managed S3 Sink connector**:
+  1. From the target cluster overview in the Confluent Cloud Console, open **Connectors** → **Add connector**.
   2. Search for and select the **Amazon S3 Sink** connector.
-  3. Configure the connector: select the `orders` topic, supply the S3 bucket name (same as the source), provide AWS credentials with write access, and match the input/output formats from the source MSK Connect configuration.
-  4. Launch the connector and wait for its status to reach **Running**.
-  </details>
-4. **Verify migrated connector**:
+  3. Name the connector `orders-s3-sink`.
+  4. Configure the connector: select the `orders` topic, supply the S3 bucket name (same as the source), provide AWS credentials with write access, and match the input/output formats from the source MSK Connect configuration.
+  5. Launch the connector and wait for its status to reach **Running**.
+2. **Verify migrated connector**:
   - Navigate to **Connectors** in the Confluent Cloud Console
   - Verify that the `orders-s3-sink` connector is running
   - Check connector metrics and logs

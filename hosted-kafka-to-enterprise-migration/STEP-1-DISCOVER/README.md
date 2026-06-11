@@ -1,6 +1,6 @@
 ## Step 1 - Discover and Plan
 
-Before migrating any infrastructure, you need to understand what you have. In this step, you'll use the KCP CLI to automatically discover and catalog the resources present in your source Kafka environment — topics and clients always, plus any ACLs, schemas, and connectors that exist (these depend on which optional tracks you enabled at deploy time). The result is a `kcp-state.json` file that serves as the **single source of truth** for your migration, driving all subsequent steps.
+Before migrating any infrastructure, you need to understand what you have. In this step, you'll use the KCP CLI to automatically discover and catalog the resources present in your source Kafka environment — topics and clients always, plus any ACLs and schemas that exist (these depend on which optional tracks you enabled at deploy time). The result is a `kcp-state.json` file that serves as the **single source of truth** for your migration, driving all subsequent steps.
 
 ### Requirements
 
@@ -37,7 +37,7 @@ Complete [Step 0: Setup](../STEP-0-SETUP/README.md) before starting Step 1.
    --state-file kcp-state.json \
    --credentials-file msk-credentials.yaml
   ```
-   This deep scan discovers topics, consumer groups, and any ACLs, schemas, or connectors present on your MSK cluster. The results are stored in `kcp-state.json`, which will drive the provisioning and migration steps that follow.
+   This deep scan discovers topics, consumer groups, and any ACLs or schemas present on your MSK cluster. The results are stored in `kcp-state.json`, which will drive the provisioning and migration steps that follow.
 
 <details>
 <summary><b>Optional: Visualize with the KCP UI</b></summary>

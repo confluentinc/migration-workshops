@@ -8,11 +8,11 @@ Migrating from Hosted Kafka services to Confluent Cloud provides a number of ben
 - **Strong security and governance controls** - Enhance security and governance of your data with enterprise-grade features, including Stream Governance, Client-side Field Level Encryption (CSFLE), role-based access control (RBAC), audit logs, and more.
 - **Mix of cluster types** - Mix-and-match Confluent Cloud cluster types to address your use cases and strike the perfect balance of cost, latency, and throughput.
 
-This repository steps through an example migration from hosted Kafka services to Confluent Cloud Enterprise Clusters. This workshop follows a proven **four-step migration framework** — **Discover and Plan, Provision Infrastructure, Migrate Data, and Migrate Clients** — using the Confluent KCP CLI, KCP UI, and **Confluent Cloud Gateway** to automate each phase.
+This repository steps through an example migration from hosted Kafka services to Confluent Cloud Enterprise Clusters. This workshop follows a proven **four-step migration framework** — **Discover and Plan, Provision Infrastructure, Migrate Data, and Migrate Clients** — using the Confluent KCP CLI, KCP UI, and **Confluent Cloud Gateway** to automate each phase. 
 
-**Gateway** is a Kafka protocol proxy that enables **zero-cut migrations** -- your client applications connect through Gateway from the start, and when it's time to cut over, a single `kcp migration execute` command seamlessly redirects all traffic to Confluent Cloud. Clients never stop, never reconfigure, and never restart.
+**Kafka Copy Paste (KCP)** is a tool from Confluent that orchestrates the entire migration process, from discovery and planning to actual client cutovers, with just a few CLI commands. For more details on all of the migration support that KCP provides, be sure to check out the [KCP documentation](https://confluentinc.github.io/kcp).  
 
-Cluster Linking creates matching mirror topics, syncs all new and historical data, and matches your consumer offsets, meaning you no longer have to recreate topics by hand or deal with missing or duplicate messages when you migrate producers and consumers.
+KCP uses **Cluster Linking** under the hood to facilitate the data migration process. Cluster Linking creates matching mirror topics, syncs all new and historical data, and matches your consumer offsets, meaning you no longer have to recreate topics by hand or deal with missing or duplicate messages when you migrate producers and consumers.
 
 In this workshop, we will use Terraform to deploy the source MSK cluster infrastructure and the Confluent KCP CLI to deploy all migration infrastructure. Gateway runs on a lightweight Kubernetes (k3s) instance on the bastion host.
 
@@ -77,9 +77,9 @@ The Terraform script will take approximately 30-40 minutes to deploy. When the s
 
 This workshop demonstrates a comprehensive migration following the four-step framework:
 
-- **Discover and Plan**: Scan your source environment to build a complete inventory of topics, ACLs, schemas, connectors, and clients
+- **Discover and Plan**: Scan your source environment to build a complete inventory of topics, ACLs, schemas, and clients
 - **Provision Infrastructure**: Generate and apply Terraform to create target and migration infrastructure automatically
-- **Migrate Data**: Replicate topics via Cluster Linking and migrate ACLs, schemas, and connectors using KCP
+- **Migrate Data**: Replicate topics via Cluster Linking, migrate ACLs and schemas using KCP, and recreate connectors as fully-managed connectors in Confluent Cloud
 - **Migrate Clients**: Execute a zero-cut migration via Gateway, seamlessly redirecting all client traffic to Confluent Cloud
 
 > **Optional migration tracks:** ACL, Schema Registry, and Connector migrations are optional and **disabled by default** to keep the workshop footprint small. Run `terraform/deploy.sh` for an interactive selector, or set `enable_acl_migration`, `enable_schema_migration`, `enable_connector_migration` in `terraform/terraform.tfvars`. The core topic-migration flow runs regardless.

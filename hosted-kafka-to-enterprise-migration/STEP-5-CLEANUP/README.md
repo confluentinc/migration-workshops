@@ -40,8 +40,8 @@ Before cleaning up migration infrastructure, remove the Gateway and Kubernetes r
    Navigate to the `migrate_schemas` folder on your bastion host and destroy the Terraform resources.
   **Optional: Destroy migrated ACLs**
    Navigate to the `migrate_acls` folder on your bastion host and destroy the Terraform resources.
-  **Optional: Destroy migrated connectors**
-   Navigate to the `migrate_connectors` folder on your bastion host and destroy the Terraform resources.
+  **Optional: Migrated connectors**
+   Connectors were deployed through the Confluent Cloud Console, not Terraform — you'll delete them in the [Check for Remaining Confluent Cloud Resources](#check-for-remaining-confluent-cloud-resources) section below.
 2. Navigate to the `migration_infra` folder on your bastion host and destroy the Terraform resources.
   ```bash
    cd ~/migration_infra
@@ -90,7 +90,7 @@ Congratulations! You have successfully completed the Hosted Kafka to Confluent C
 
 - **Discovered** your source Kafka environment using the KCP CLI
 - **Provisioned** target and migration infrastructure with KCP-generated Terraform
-- **Migrated data** — topics (plus any optional tracks you enabled: ACLs, schemas, connectors) — using KCP CLI
+- **Migrated data** — topics (plus any optional tracks you enabled: ACLs and schemas via KCP CLI, connectors via the Confluent Cloud Console)
 - **Migrated clients** from MSK to Confluent Cloud with zero downtime using Gateway zero-cut migration
 - Cleaned up all workshop resources
 
