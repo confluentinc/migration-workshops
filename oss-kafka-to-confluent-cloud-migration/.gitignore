@@ -1,0 +1,37 @@
+# Secrets / runtime config (NEVER commit real credentials).
+# Note: .gitignore treats a whole line as the pattern, so keep comments on their
+# own lines — no trailing "# ..." after a pattern.
+
+# Written on the bastion: workshop.env and ca.pem at boot, target.env in STEP-2
+# (target.env holds the Confluent Cloud cluster API key).
+workshop.env
+target.env
+ca.pem
+
+# Bastion SSH key written by terraform/ (tls.tf).
+terraform/ssh.pem
+
+# Python virtual environment (created by clients/setup.sh)
+clients/.venv/
+
+# Generated at runtime
+clients/logs/
+clients/*.pid
+gateway/rendered-crs/
+kcp-state.json
+kcp.log
+metric_report_*.md
+migration-state.json
+
+# KCP-generated Terraform (STEP-2 / STEP-3)
+target_infra/
+migration-infra/
+migrate_topics/
+
+# Terraform
+**/.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log

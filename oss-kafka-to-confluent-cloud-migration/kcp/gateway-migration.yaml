@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/confluentinc/kcp/v0.9.2/internal/manifest/gatewaymigration.schema.json
+#
+# The workshop's zero-cut cutover, as the declarative manifest `kcp migration` reads (KCP
+# v0.9+). Used in STEP-4:
+#
+#   kcp migration init      --migration-yaml kcp/gateway-migration.yaml
+#   kcp migration lag-check --migration-yaml kcp/gateway-migration.yaml
+#   kcp migration execute   --migration-yaml kcp/gateway-migration.yaml --migration-state-file migration-state.json
+#
+# It holds no secrets: every ${VAR} comes from workshop.env or target.env, and KCP refuses
+# to run if one is unset. Run kcp from the workshop root; relative paths resolve from there.
+apiVersion: kcp.confluent.io/v1alpha1
+kind: GatewayMigration
+metadata:
+  # The migration's identity in migration-state.json; re-running init updates it.
+  name: oss-to-cc
+interpolate: true
+
+spec:
+  source:
+    type: apache-kafka
+    bootstrapServers:
+      - ${KAFKA_BOOTSTRAP}
+    credentials:
+      sasl_scram:
+        username: ${KAFKA_SCRAM_USER}
+        password: ${KAFKA_SCRAM_PASSWORD}
+        mechanism: SHA512
+        ca_cert: ${CA_CERT_FILE}
+
+  target:
+    type: confluent-cloud
+    clusterId: ${TARGET_CLUSTER_ID}
+    kafka:
+      bootstrapServers:
+        - ${CC_BOOTSTRAP_SERVERS}
+      restEndpoint: ${TARGET_REST_ENDPOINT}
+      credentials:
+        sasl_plain:
+          username: ${CC_API_KEY}
+          password: ${CC_API_SECRET}
+          tls: true
+
+  clusterLink:
+    name: ${CLUSTER_LINK_NAME}
+    # After fencing, let the final consumer offsets sync (see consumerOffsetSyncDrainDuration),
+    # then pause offset sync for the promote and switchover; KCP restores it afterwards.
+    pauseConsumerOffsetSync: true
+
+  gateway:
+    namespace: confluent
+    # The bastion's k3s kubeconfig. KCP reads this path; it does not consult $KUBECONFIG.
+    kubeconfig: ~/.kube/config
+    crs:
+      # The live Gateway (its init state, from gateway/configure_gateway_target.sh). KCP
+      # derives the fence from it: it injects a fence onto the routes listed below.
+      initial: workshop-gateway
+      switchover: gateway/rendered-crs/gateway-switchover.yaml
+    fence:
+      routes:
+        - migration-route
+
+  # The mirror topics to promote at cutover (STEP-3 mirrors only this one).
+  topics:
+    - orders
+
+  defaultPolicies:
+    lagThreshold: 1000
+    rolloutTimeout: 10m
+    # The link syncs offsets every 5s (kcp/prepare_migration_infra.sh), so 10s covers one
+    # full sync after the fence freezes the source offsets.
+    consumerOffsetSyncDrainDuration: 10s

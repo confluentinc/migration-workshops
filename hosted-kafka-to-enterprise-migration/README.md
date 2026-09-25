@@ -10,11 +10,13 @@ Migrating from Hosted Kafka services to Confluent Cloud provides a number of ben
 
 This repository steps through an example migration from hosted Kafka services to Confluent Cloud Enterprise Clusters. This workshop follows a proven **four-step migration framework** — **Discover and Plan, Provision Infrastructure, Migrate Data, and Migrate Clients** — using the Confluent KCP CLI, KCP UI, and **Confluent Cloud Gateway** to automate each phase. 
 
-**Kafka Copy Paste (KCP)** is a tool from Confluent that orchestrates the entire migration process, from discovery and planning to actual client cutovers, with just a few CLI commands. For more details on all of the migration support that KCP provides, be sure to check out the [KCP documentation](https://confluentinc.github.io/kcp).  
+**KCP** is a tool from Confluent that orchestrates the entire migration process, from discovery and planning to actual client cutovers, with just a few CLI commands. For more details on all of the migration support that KCP provides, be sure to check out the [KCP documentation](https://confluentinc.github.io/kcp).  
 
 KCP uses **Cluster Linking** under the hood to facilitate the data migration process. Cluster Linking creates matching mirror topics, syncs all new and historical data, and matches your consumer offsets, meaning you no longer have to recreate topics by hand or deal with missing or duplicate messages when you migrate producers and consumers.
 
 In this workshop, we will use Terraform to deploy the source MSK cluster infrastructure and the Confluent KCP CLI to deploy all migration infrastructure. Gateway runs on a lightweight Kubernetes (k3s) instance on the bastion host.
+
+![Workshop Architecture](./assets/workshop-architecture.png)
 
 ## Prerequisites
 

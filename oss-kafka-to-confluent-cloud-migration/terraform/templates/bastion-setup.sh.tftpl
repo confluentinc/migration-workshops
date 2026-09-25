@@ -1,0 +1,92 @@
+#!/bin/bash
+# User data for the workshop BASTION, the migration control plane inside the VPC. Installs
+# k3s (for the Gateway), Helm, Vault, KCP ${kcp_version}, Terraform, Java and the Apache Kafka
+# CLI tools, trusts the workshop CA, then unpacks the workshop scripts and writes
+# workshop.env. Rendered by Terraform (instances.tf). Check progress with
+# `cloud-init status --wait`; on failure, see /var/log/cloud-init-output.log.
+set -euxo pipefail
+
+dnf install -y git jq unzip python3 python3-pip java-17-amazon-corretto-headless yum-utils
+yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+dnf install -y terraform
+
+# Trust the workshop CA system-wide, so kcp, the Python clients and curl verify the
+# source broker's certificate without any skip-verify flags.
+cat > /etc/pki/ca-trust/source/anchors/oss-workshop-ca.pem <<'EOF'
+${trimspace(ca_cert_pem)}
+EOF
+update-ca-trust
+
+curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+curl -fsSL --retry 5 -o /tmp/vault.zip \
+  "https://releases.hashicorp.com/vault/${vault_version}/vault_${vault_version}_linux_amd64.zip"
+echo "${vault_sha256}  /tmp/vault.zip" | sha256sum -c -
+unzip -o /tmp/vault.zip -d /usr/local/bin
+
+curl -fsSL --retry 5 -o /tmp/kcp.tgz \
+  "https://github.com/confluentinc/kcp/releases/download/v${kcp_version}/kcp_linux_amd64.tar.gz"
+echo "${kcp_sha256}  /tmp/kcp.tgz" | sha256sum -c -
+tar -xzf /tmp/kcp.tgz -C /tmp
+install -m 0755 /tmp/kcp/kcp /usr/local/bin/kcp
+
+# Kafka CLI tools (kafka-configs.sh registers the SCRAM user with the Gateway in STEP-2).
+curl -fsSL --retry 5 -o /tmp/kafka.tgz \
+  "https://archive.apache.org/dist/kafka/${kafka_version}/kafka_2.13-${kafka_version}.tgz"
+echo "${kafka_sha512}  /tmp/kafka.tgz" | sha512sum -c -
+mkdir -p /opt/kafka
+tar -xzf /tmp/kafka.tgz -C /opt/kafka --strip-components=1
+
+install -d -o ec2-user -g ec2-user /home/ec2-user/.kube
+install -m 0600 -o ec2-user -g ec2-user /etc/rancher/k3s/k3s.yaml /home/ec2-user/.kube/config
+
+# The workshop scripts, bundled from the checkout terraform ran in (workshop_bundle.tf) and
+# served through the VPC's S3 endpoint. Retries cover the bucket policy settling.
+curl -fsSL --retry 10 --retry-delay 3 --retry-all-errors -o /tmp/workshop.zip "${workshop_bundle_url}"
+echo "${workshop_bundle_sha256}  /tmp/workshop.zip" | sha256sum -c -
+WORKSHOP=/home/ec2-user/oss-workshop
+install -d -o ec2-user -g ec2-user "$WORKSHOP"
+# -DD: the bundle's timestamps are fixed placeholders (for a reproducible checksum).
+sudo -u ec2-user unzip -q -o -DD /tmp/workshop.zip -d "$WORKSHOP"
+rm -f /tmp/workshop.zip
+install -m 0644 -o ec2-user -g ec2-user \
+  /etc/pki/ca-trust/source/anchors/oss-workshop-ca.pem "$WORKSHOP/ca.pem"
+# kcp warns about migration manifests other users can read (they may carry credentials);
+# this one only references environment variables, but keep it private to avoid the noise.
+chmod 600 "$WORKSHOP/kcp/gateway-migration.yaml"
+
+cat > "$WORKSHOP/workshop.env" <<'EOF'
+# Written at boot from Terraform outputs; sourced automatically by ~/.bashrc.
+export AWS_REGION="${aws_region}"
+export VPC_ID="${vpc_id}"
+export KAFKA_BOOTSTRAP="${kafka_host}:${kafka_port}"
+export KAFKA_BROKER_HOST="${kafka_host}"
+export KAFKA_BROKER_PORT="${kafka_port}"
+export KAFKA_BROKER_IP="${kafka_private_ip}"
+export KAFKA_BROKER_SUBNET_ID="${kafka_subnet_id}"
+export LINK_PROVISIONER_SG_ID="${link_provisioner_sg_id}"
+export PRIVATE_LINK_SUBNET_CIDRS="${private_link_subnet_cidrs}"
+export KAFKA_SCRAM_USER='${scram_username}'
+export KAFKA_SCRAM_PASSWORD='${scram_password}'
+export CA_CERT_FILE="$HOME/oss-workshop/ca.pem"
+# Re-apply terraform/ on your laptop, then re-run the two lines below to refresh the scripts:
+#   curl -fsSL "$WORKSHOP_BUNDLE_URL" -o ~/workshop.zip
+#   unzip -q -o -DD ~/workshop.zip -d ~/oss-workshop
+export WORKSHOP_BUNDLE_URL="${workshop_bundle_url}"
+# Consumed by the KCP-generated migration-infra Terraform (STEP-2).
+export TF_VAR_source_sasl_scram_username="$KAFKA_SCRAM_USER"
+export TF_VAR_source_sasl_scram_password="$KAFKA_SCRAM_PASSWORD"
+export KUBECONFIG="$HOME/.kube/config"
+export PATH="/opt/kafka/bin:$PATH"
+EOF
+chown ec2-user:ec2-user "$WORKSHOP/workshop.env"
+
+cat >> /home/ec2-user/.bashrc <<'EOF'
+
+# OSS migration workshop
+[ -f ~/oss-workshop/workshop.env ] && source ~/oss-workshop/workshop.env
+[ -f ~/oss-workshop/target.env ] && source ~/oss-workshop/target.env
+EOF
+
+echo "Bastion ready."
