@@ -1,0 +1,49 @@
+# Gateway initial deployment - STEP-0
+# Passthrough mode: client SCRAM traffic flows straight through to the source broker on EC2
+# over SASL_SSL (TLS verified against the workshop CA in the oss-tls truststore).
+# This is the minimal Gateway config before Confluent Cloud exists.
+#
+# __OSS_BOOTSTRAP__ is substituted by setup_gateway.sh (kafka.oss-workshop.internal:9092).
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: confluent
+---
+apiVersion: platform.confluent.io/v1beta1
+kind: Gateway
+metadata:
+  name: workshop-gateway
+  namespace: confluent
+spec:
+  replicas: 2
+  image:
+    application: confluentinc/cpc-gateway:1.2.0-1-ubi9
+    init: confluentinc/confluent-init-container:3.2.1
+  streamingDomains:
+    - name: source-oss
+      type: kafka
+      kafkaCluster:
+        bootstrapServers:
+          - id: SCRAM
+            endpoint: SASL_SSL://__OSS_BOOTSTRAP__
+            tls:
+              secretRef: oss-tls
+        nodeIdRanges:
+          - name: pool-1
+            start: 1
+            end: 1
+  routes:
+    - name: migration-route
+      endpoint: localhost:9595
+      brokerIdentificationStrategy:
+        type: port
+      streamingDomain:
+        name: source-oss
+        bootstrapServerId: SCRAM
+      security:
+        auth: passthrough
+  externalAccess:
+    type: loadBalancer
+    loadBalancer:
+      domain: localhost
